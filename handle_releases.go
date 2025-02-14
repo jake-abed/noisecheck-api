@@ -8,7 +8,7 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2/user"
 )
 
-func createReleaseHandler() http.Handler {
+func (c *apiConfig) createReleaseHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		claims, ok := clerk.SessionClaimsFromContext(ctx)

@@ -1,8 +1,7 @@
 -- +goose Up
-CREATE TABLE `users` (
+CREATE TABLE users (
   id string PRIMARY KEY DEFAULT (uuid4()) NOT NULL,
-  first_name TEXT,
-  last_name TEXT,
+  username TEXT,
   email TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP

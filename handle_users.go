@@ -1,18 +1,19 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
-func getUserHandler(w http.ResponseWriter, r *http.Request) {
+func (c *apiConfig) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func createUserHandler(w http.ResponseWriter, r *http.Request) {
+func (c *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	type userBody struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Username string `json:"username"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
