@@ -4,10 +4,6 @@
 
 package database
 
-import (
-	"database/sql"
-)
-
 type Release struct {
 	ID        int64
 	Name      string
@@ -17,8 +13,8 @@ type Release struct {
 }
 
 type User struct {
-	ID        interface{}
-	Username  sql.NullString
+	ID        string
+	Username  string
 	Email     string
 	CreatedAt string
 	UpdatedAt string

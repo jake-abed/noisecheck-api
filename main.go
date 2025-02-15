@@ -51,7 +51,7 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("welcome\n"))
 	})
-	r.Post("/users", cfg.createUserHandler)
-	r.Post("/releases", authdCreateRelease)
+	r.Post("/api/webhooks/users", cfg.userWebhookHandler)
+	r.Post("/api/releases", authdCreateRelease)
 	http.ListenAndServe(":3000", r)
 }

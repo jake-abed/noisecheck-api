@@ -7,22 +7,22 @@ package database
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (username, email)
-  VALUES (?, ?)
+INSERT INTO users (id, username, email)
+  VALUES (?, ?, ?)
   RETURNING id, username, email, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username sql.NullString
+	ID       string
+	Username string
 	Email    string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Email)
+	row := q.db.QueryRowContext(ctx, createUser, arg.ID, arg.Username, arg.Email)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -35,7 +35,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, username, email, created_at, updated_at FROM users ORDER BY username
+SELECT id, username, email, created_at, updated_at FROM users ORDER BY username ASC
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -65,4 +65,49 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, email, created_at, updated_at from users WHERE lower(username) = lower(?) LIMIT 1
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, lower)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserById = `-- name: UpdateUserById :one
+UPDATE users
+  SET email = ?,
+  username = ?,
+  updated_at = CURRENT_TIMESTAMP
+  WHERE id = ?
+  RETURNING id, username, email, created_at, updated_at
+`
+
+type UpdateUserByIdParams struct {
+	Email    string
+	Username string
+	ID       string
+}
+
+func (q *Queries) UpdateUserById(ctx context.Context, arg UpdateUserByIdParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserById, arg.Email, arg.Username, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
