@@ -7,9 +7,12 @@ package database
 type Release struct {
 	ID        int64
 	Name      string
-	SongCount int64
 	UserID    string
 	Url       string
+	Imgurl    string
+	SongCount int64
+	IsPublic  bool
+	IsSingle  bool
 }
 
 type User struct {

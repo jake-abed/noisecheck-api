@@ -10,6 +10,7 @@ import (
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/jake-abed/noisecheck-api/internal/database"
 	"github.com/joho/godotenv"
 
@@ -48,6 +49,7 @@ func main() {
 	clerk.SetKey(clerkKey)
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(cors.AllowAll().Handler)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("welcome\n"))
 	})
