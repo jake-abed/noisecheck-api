@@ -13,6 +13,17 @@ type Release struct {
 	SongCount int64
 	IsPublic  bool
 	IsSingle  bool
+	CreatedAt string
+	UpdatedAt string
+}
+
+type Track struct {
+	ID        int64
+	Name      string
+	Url       string
+	ReleaseID int64
+	CreatedAt string
+	UpdatedAt string
 }
 
 type User struct {

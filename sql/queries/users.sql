@@ -16,3 +16,6 @@ UPDATE users
   updated_at = CURRENT_TIMESTAMP
   WHERE id = ?
   RETURNING *;
+
+-- name: DeleteUserById :exec
+DELETE FROM users WHERE id = ?;

@@ -15,3 +15,26 @@ INSERT INTO releases (
   ?
 )
 RETURNING *;
+
+-- name: UpdateRelease :one
+UPDATE releases
+  SET name = ?,
+    url = ?,
+    imgUrl = ?,
+    is_public = ?,
+    is_single = ?,
+    updated_at = CURRENT_TIMESTAMP
+  WHERE id = ?
+RETURNING *;
+
+-- name: GetAllPublicReleases :many
+SELECT * FROM releases WHERE is_public = TRUE;
+
+-- name: GetAllPublicReleasesByUser :many
+SELECT * FROM releases WHERE is_public = TRUE AND user_id = ?;
+
+-- name: GetAllReleasesByUser :many 
+SELECT * FROM releases WHERE user_id = ?;
+
+-- name: DeleteReleaseById :exec
+DELETE FROM releases WHERE id = ?;

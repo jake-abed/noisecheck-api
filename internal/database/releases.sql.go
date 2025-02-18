@@ -25,7 +25,7 @@ INSERT INTO releases (
   ?,
   ?
 )
-RETURNING id, name, user_id, url, imgurl, song_count, is_public, is_single
+RETURNING id, name, user_id, url, imgurl, song_count, is_public, is_single, created_at, updated_at
 `
 
 type CreateReleaseParams struct {
@@ -56,6 +56,177 @@ func (q *Queries) CreateRelease(ctx context.Context, arg CreateReleaseParams) (R
 		&i.SongCount,
 		&i.IsPublic,
 		&i.IsSingle,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteReleaseById = `-- name: DeleteReleaseById :exec
+DELETE FROM releases WHERE id = ?
+`
+
+func (q *Queries) DeleteReleaseById(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteReleaseById, id)
+	return err
+}
+
+const getAllPublicReleases = `-- name: GetAllPublicReleases :many
+SELECT id, name, user_id, url, imgurl, song_count, is_public, is_single, created_at, updated_at FROM releases WHERE is_public = TRUE
+`
+
+func (q *Queries) GetAllPublicReleases(ctx context.Context) ([]Release, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPublicReleases)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Release
+	for rows.Next() {
+		var i Release
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.UserID,
+			&i.Url,
+			&i.Imgurl,
+			&i.SongCount,
+			&i.IsPublic,
+			&i.IsSingle,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllPublicReleasesByUser = `-- name: GetAllPublicReleasesByUser :many
+SELECT id, name, user_id, url, imgurl, song_count, is_public, is_single, created_at, updated_at FROM releases WHERE is_public = TRUE AND user_id = ?
+`
+
+func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string) ([]Release, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPublicReleasesByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Release
+	for rows.Next() {
+		var i Release
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.UserID,
+			&i.Url,
+			&i.Imgurl,
+			&i.SongCount,
+			&i.IsPublic,
+			&i.IsSingle,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllReleasesByUser = `-- name: GetAllReleasesByUser :many
+SELECT id, name, user_id, url, imgurl, song_count, is_public, is_single, created_at, updated_at FROM releases WHERE user_id = ?
+`
+
+func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Release, error) {
+	rows, err := q.db.QueryContext(ctx, getAllReleasesByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Release
+	for rows.Next() {
+		var i Release
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.UserID,
+			&i.Url,
+			&i.Imgurl,
+			&i.SongCount,
+			&i.IsPublic,
+			&i.IsSingle,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRelease = `-- name: UpdateRelease :one
+UPDATE releases
+  SET name = ?,
+    url = ?,
+    imgUrl = ?,
+    is_public = ?,
+    is_single = ?,
+    updated_at = CURRENT_TIMESTAMP
+  WHERE id = ?
+RETURNING id, name, user_id, url, imgurl, song_count, is_public, is_single, created_at, updated_at
+`
+
+type UpdateReleaseParams struct {
+	Name     string
+	Url      string
+	Imgurl   string
+	IsPublic bool
+	IsSingle bool
+	ID       int64
+}
+
+func (q *Queries) UpdateRelease(ctx context.Context, arg UpdateReleaseParams) (Release, error) {
+	row := q.db.QueryRowContext(ctx, updateRelease,
+		arg.Name,
+		arg.Url,
+		arg.Imgurl,
+		arg.IsPublic,
+		arg.IsSingle,
+		arg.ID,
+	)
+	var i Release
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UserID,
+		&i.Url,
+		&i.Imgurl,
+		&i.SongCount,
+		&i.IsPublic,
+		&i.IsSingle,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
