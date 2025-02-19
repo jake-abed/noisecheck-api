@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"encoding/json"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
@@ -21,6 +22,19 @@ type apiConfig struct {
 	Db *database.Queries
 }
 
+func RespondWithError(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	msg string,
+) {
+	w.WriteHeader(status)
+	error := ApiError{Error: msg}
+	errBody, _ := json.Marshal(&error)
+	w.Write(errBody)
+	return	
+}
+
 func main() {
 	// Get and set all env variables.
 	err := godotenv.Load()
@@ -32,7 +46,7 @@ func main() {
 	clerkKey := os.Getenv("CLERK_KEY")
 
 	dbURL := fmt.Sprintf("%s?authToken=%s", tursoUrl, tursoToken)
-	
+
 	// Try to open DB and exit if it won't work.
 	db, err := sql.Open("libsql", dbURL)
 	if err != nil {

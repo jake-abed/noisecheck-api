@@ -7,19 +7,9 @@ import (
 	"net/http"
 
 	"github.com/clerk/clerk-sdk-go/v2"
-	"github.com/clerk/clerk-sdk-go/v2/user"
+	clerkUser "github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jake-abed/noisecheck-api/internal/database"
 )
-
-type release struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	UserID   string `json:"user_id"`
-	Url      string `json:"url"`
-	Imgurl   string `json:"image_url"`
-	IsPublic bool   `json:"is_public"`
-	IsSingle bool   `json:"is_single"`
-}
 
 func (c *apiConfig) createReleaseHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,18 +21,18 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 			return
 		}
 
-		usr, err := user.Get(ctx, claims.Subject)
+		user, err := clerkUser.Get(ctx, claims.Subject)
 		if err != nil {
 			fmt.Printf("error: %s", err.Error())
 		}
 
-		if usr == nil {
+		if user == nil {
 			w.Write([]byte(`{"error": "User does not exist"}`))
 			return
 		}
 
 		decoder := json.NewDecoder(r.Body)
-		relBody := release{}
+		relBody := Release{}
 		if err := decoder.Decode(&relBody); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			error := ApiError{Error: "Malformed body!"}
@@ -54,7 +44,7 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 		params := database.CreateReleaseParams{
 			Name:     relBody.Name,
 			Url:      "",
-			UserID:   usr.ID,
+			UserID:   user.ID,
 			Imgurl:   relBody.Imgurl,
 			IsPublic: relBody.IsPublic,
 			IsSingle: relBody.IsSingle,
@@ -69,18 +59,95 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 			return
 		}
 
-		rel := release{
-			ID:       int(newRel.ID),
-			Name:     newRel.Name,
-			UserID:   newRel.UserID,
-			Url:      newRel.Url,
-			Imgurl:   newRel.Imgurl,
-			IsPublic: newRel.IsPublic,
-			IsSingle: newRel.IsSingle,
-		}
+		rel := convertDbRelease(newRel)
+
 		releaseReturn, _ := json.Marshal(&rel)
 		w.WriteHeader(http.StatusOK)
 		w.Write(releaseReturn)
 		return
 	})
+}
+
+func (c *apiConfig) GetReleaseHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	relBody := Release{}
+	err := decoder.Decode(&relBody)
+
+	if err != nil {
+		RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !relBody.IsPublic {
+		RespondWithError(w, r, http.StatusUnauthorized, "This Release is Private")
+		return
+	}
+}
+
+func (c *apiConfig) UpdateReleaseHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		claims, ok := clerk.SessionClaimsFromContext(ctx)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"access": "unauthorized"}`))
+			return
+		}
+
+		user, err := clerkUser.Get(ctx, claims.Subject)
+		if err != nil {
+			fmt.Printf("error: %s", err.Error())
+		}
+
+		if user == nil {
+			w.Write([]byte(`{"error": "User does not exist"}`))
+			return
+		}
+
+		decoder := json.NewDecoder(r.Body)
+		relBody := Release{}
+		err = decoder.Decode(&relBody)
+		if err != nil {
+			RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if user.ID != relBody.UserID {
+			RespondWithError(w, r, http.StatusUnauthorized,
+				"you may not edit another user's track")
+			return
+		}
+
+		params := database.UpdateReleaseParams{
+			Name:     relBody.Name,
+			Url:      relBody.Url,
+			Imgurl:   relBody.Imgurl,
+			IsPublic: relBody.IsPublic,
+			IsSingle: relBody.IsSingle,
+			ID:       int64(relBody.ID),
+		}
+
+		updatedRel, err := c.Db.UpdateRelease(context.Background(), params)
+		if err != nil {
+			RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		relRes := convertDbRelease(updatedRel)
+		resBody, _ := json.Marshal(&relRes)
+		w.WriteHeader(http.StatusOK)
+		w.Write(resBody)
+		return
+	})
+}
+
+func convertDbRelease(rel database.Release) Release {
+	return Release{
+		ID:       int(rel.ID),
+		Name:     rel.Name,
+		Url:      rel.Url,
+		Imgurl:   rel.Imgurl,
+		IsPublic: rel.IsPublic,
+		IsSingle: rel.IsSingle,
+	}
 }

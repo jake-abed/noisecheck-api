@@ -3,31 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/jake-abed/noisecheck-api/internal/database"
 )
-
-type ClerkUser struct {
-	Data struct {
-		EmailAddresses []struct {
-			EmailAddress string `json:"email_address"`
-			ID           string `json:"id"`
-			LinkedTo     []any  `json:"linked_to"`
-			Object       string `json:"object"`
-		} `json:"email_addresses"`
-		FirstName       string `json:"first_name"`
-		ID              string `json:"id"`
-		ImageURL        string `json:"image_url"`
-		LastName        string `json:"last_name"`
-		ProfileImageURL string `json:"profile_image_url"`
-		Username        string `json:"username"`
-	} `json:"data"`
-	Object    string `json:"object"`
-	Timestamp int64  `json:"timestamp"`
-	Type      string `json:"type"`
-}
 
 func (c *apiConfig) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	type GetUserBody struct {
@@ -88,7 +67,6 @@ func (c *apiConfig) userWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Printf("%s added to the app I guess.\n", newUser.Email)
 		userResp, _ := json.Marshal(&newUser)
 		w.WriteHeader(http.StatusOK)
 		w.Write(userResp)
@@ -109,10 +87,21 @@ func (c *apiConfig) userWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Printf("%s updated\n", updatedUser.Username)
 		userResp, _ := json.Marshal(&updatedUser)
 		w.WriteHeader(http.StatusOK)
 		w.Write(userResp)
+		return
+	case "user.deleted":
+		err := c.Db.DeleteUserById(context.Background(), newBody.Data.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			error := ApiError{Error: err.Error()}
+			errorBody, _ := json.Marshal(&error)
+			w.Write(errorBody)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 		return
 	default:
 		w.WriteHeader(http.StatusBadRequest)
