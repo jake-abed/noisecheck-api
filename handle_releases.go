@@ -2,15 +2,21 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"net/http"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkUser "github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jake-abed/noisecheck-api/internal/database"
 )
+
+const MAX_IMG_SIZE = 10 << 18
 
 func (c *apiConfig) createReleaseHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,26 +38,62 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 			return
 		}
 
-		decoder := json.NewDecoder(r.Body)
-		relBody := Release{}
-		if err := decoder.Decode(&relBody); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			error := ApiError{Error: "Malformed body!"}
-			errorBody, _ := json.Marshal(&error)
-			w.Write(errorBody)
+		err = r.ParseMultipartForm(MAX_IMG_SIZE)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		params := database.CreateReleaseParams{
-			Name:     relBody.Name,
-			Url:      "",
-			UserID:   user.ID,
-			Imgurl:   relBody.Imgurl,
-			IsPublic: relBody.IsPublic,
-			IsSingle: relBody.IsSingle,
+		body := r.FormValue("data")
+		newRelBody := NewReleaseBody{}
+		err = json.Unmarshal([]byte(body), &newRelBody)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
 		}
 
-		newRel, err := c.Db.CreateRelease(context.Background(), params)
+		file, fileHeader, err := r.FormFile("file")
+		defer file.Close()
+
+		contentType := fileHeader.Header.Get("Content-Type")
+		fileType, _, err := mime.ParseMediaType(contentType)
+		if fileType != "image/jpeg" && fileType != "image/png" {
+			RespondWithError(w, http.StatusUnsupportedMediaType, "Wrong file type!")
+			return
+		}
+		fileFormat := strings.Replace(contentType, "image/", "", 1)
+
+		randBytes := make([]byte, 8)
+		rand.Read(randBytes)
+		imagePathMod := base64.RawURLEncoding.EncodeToString(randBytes)
+
+		fileName := fmt.Sprintf("release/image/%s-%s.%s",
+			imagePathMod, newRelBody.Name, fileFormat)
+
+		s3Params := &s3.PutObjectInput{
+			Bucket:      &c.S3Bucket,
+			Key:         &fileName,
+			Body:        file,
+			ContentType: &contentType,
+		}
+
+		_, err = c.S3Client.PutObject(context.Background(), s3Params)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "AWS Error")
+			fmt.Println(err)
+			return
+		}
+
+		newRelParams := database.CreateReleaseParams{
+			Name:     newRelBody.Name,
+			UserID:   user.ID,
+			Url:      "#",
+			Imgurl:   c.CloudfrontUrl + "/" + fileName,
+			IsPublic: newRelBody.IsPublic,
+			IsSingle: newRelBody.IsSingle,
+		}
+
+		newRel, err := c.Db.CreateRelease(context.Background(), newRelParams)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			error := ApiError{Error: err.Error()}
@@ -75,12 +117,12 @@ func (c *apiConfig) GetReleaseHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&relBody)
 
 	if err != nil {
-		RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if !relBody.IsPublic {
-		RespondWithError(w, r, http.StatusUnauthorized, "This Release is Private")
+		RespondWithError(w, http.StatusUnauthorized, "This Release is Private")
 		return
 	}
 }
@@ -109,12 +151,12 @@ func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 		relBody := Release{}
 		err = decoder.Decode(&relBody)
 		if err != nil {
-			RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		if user.ID != relBody.UserID {
-			RespondWithError(w, r, http.StatusUnauthorized,
+			RespondWithError(w, http.StatusUnauthorized,
 				"you may not edit another user's track")
 			return
 		}
@@ -130,7 +172,7 @@ func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 
 		updatedRel, err := c.Db.UpdateRelease(context.Background(), params)
 		if err != nil {
-			RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 

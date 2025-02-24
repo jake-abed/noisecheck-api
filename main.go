@@ -23,15 +23,15 @@ import (
 )
 
 type apiConfig struct {
-	Db       *database.Queries
-	S3Bucket string
-	S3Client *s3.Client
-	S3Region string
+	Db            *database.Queries
+	S3Bucket      string
+	S3Client      *s3.Client
+	S3Region      string
+	CloudfrontUrl string
 }
 
 func RespondWithError(
 	w http.ResponseWriter,
-	r *http.Request,
 	status int,
 	msg string,
 ) {
@@ -58,7 +58,7 @@ func main() {
 	if tursoToken == "" {
 		log.Fatal("TURSO_AUTH_TOKEN environment variable is not set")
 	}
-	
+
 	clerkKey := os.Getenv("CLERK_KEY")
 	if clerkKey == "" {
 		log.Fatal("CLERK_KEY environment variable is not set")
@@ -93,11 +93,17 @@ func main() {
 		log.Fatal("S3_REGION environment variable is not set")
 	}
 
+	cloudfrontUrl := os.Getenv("CLOUDFRONT_URL")
+	if cloudfrontUrl == "" {
+		log.Fatal("CLOUDFRONT_URL environment variable not set")
+	}
+
 	cfg := apiConfig{
-		Db:       dbQueries,
-		S3Bucket: s3Bucket,
-		S3Client: s3Client,
-		S3Region: s3Region,
+		Db:            dbQueries,
+		S3Bucket:      s3Bucket,
+		S3Client:      s3Client,
+		S3Region:      s3Region,
+		CloudfrontUrl: cloudfrontUrl,
 	}
 
 	// Prep handlers with required auth wrapper.

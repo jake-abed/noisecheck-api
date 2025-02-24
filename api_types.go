@@ -32,6 +32,12 @@ type ClerkUser struct {
 	Type      string `json:"type"`
 }
 
+type NewReleaseBody struct {
+	Name     string `json:"name"`
+	IsPublic bool   `json:"is_public"`
+	IsSingle bool   `json:"is_single"`
+}
+
 type Release struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`

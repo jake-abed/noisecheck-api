@@ -36,7 +36,7 @@ func (c *apiConfig) userWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(newBody.Data.EmailAddresses) == 0 {
+	if newBody.Type != "user.deleted" && len(newBody.Data.EmailAddresses) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		error := ApiError{Error: "No email in payload!"}
 		errorBody, _ := json.Marshal(&error)
