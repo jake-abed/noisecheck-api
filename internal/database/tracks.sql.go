@@ -18,7 +18,7 @@ INSERT INTO tracks (
   ?,
   ?,
   ?
-) RETURNING id, name, url, release_id, created_at, updated_at
+) RETURNING id, name, url, length, release_id, created_at, updated_at
 `
 
 type AddTrackParams struct {
@@ -34,6 +34,7 @@ func (q *Queries) AddTrack(ctx context.Context, arg AddTrackParams) (Track, erro
 		&i.ID,
 		&i.Name,
 		&i.Url,
+		&i.Length,
 		&i.ReleaseID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -51,7 +52,7 @@ func (q *Queries) DeleteTrackById(ctx context.Context, id int64) error {
 }
 
 const getTrackById = `-- name: GetTrackById :one
-SELECT id, name, url, release_id, created_at, updated_at FROM tracks WHERE id = ?
+SELECT id, name, url, length, release_id, created_at, updated_at FROM tracks WHERE id = ?
 `
 
 func (q *Queries) GetTrackById(ctx context.Context, id int64) (Track, error) {
@@ -61,6 +62,7 @@ func (q *Queries) GetTrackById(ctx context.Context, id int64) (Track, error) {
 		&i.ID,
 		&i.Name,
 		&i.Url,
+		&i.Length,
 		&i.ReleaseID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -69,7 +71,7 @@ func (q *Queries) GetTrackById(ctx context.Context, id int64) (Track, error) {
 }
 
 const getTracksByRelease = `-- name: GetTracksByRelease :many
-SELECT id, name, url, release_id, created_at, updated_at FROM tracks WHERE release_id = ?
+SELECT id, name, url, length, release_id, created_at, updated_at FROM tracks WHERE release_id = ?
 `
 
 func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Track, error) {
@@ -85,6 +87,7 @@ func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Tr
 			&i.ID,
 			&i.Name,
 			&i.Url,
+			&i.Length,
 			&i.ReleaseID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -103,7 +106,7 @@ func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Tr
 }
 
 const getTracksByUser = `-- name: GetTracksByUser :many
-SELECT tracks.id, tracks.name, tracks.url, release_id, tracks.created_at, tracks.updated_at, releases.id, releases.name, user_id, releases.url, imgurl, song_count, is_public, is_single, releases.created_at, releases.updated_at FROM tracks
+SELECT tracks.id, tracks.name, tracks.url, length, release_id, tracks.created_at, tracks.updated_at, releases.id, releases.name, user_id, releases.url, imgurl, song_count, is_public, is_single, releases.created_at, releases.updated_at FROM tracks
   INNER JOIN releases ON releases.id = tracks.release_id
   WHERE releases.user_id = ?
 `
@@ -112,6 +115,7 @@ type GetTracksByUserRow struct {
 	ID          int64
 	Name        string
 	Url         string
+	Length      int64
 	ReleaseID   int64
 	CreatedAt   string
 	UpdatedAt   string
@@ -140,6 +144,7 @@ func (q *Queries) GetTracksByUser(ctx context.Context, userID string) ([]GetTrac
 			&i.ID,
 			&i.Name,
 			&i.Url,
+			&i.Length,
 			&i.ReleaseID,
 			&i.CreatedAt,
 			&i.UpdatedAt,

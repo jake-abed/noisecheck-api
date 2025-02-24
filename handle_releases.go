@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -111,20 +112,31 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 	})
 }
 
-func (c *apiConfig) GetReleaseHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	relBody := Release{}
-	err := decoder.Decode(&relBody)
+func (c *apiConfig) getReleaseHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		RespondWithError(w, http.StatusNotFound, "Release ID required")
+		return
+	}
 
+	idInt, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid Release Id")
+		return
+	}
+
+	rel, err := c.Db.GetReleaseById(context.Background(), idInt)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	if !relBody.IsPublic {
-		RespondWithError(w, http.StatusUnauthorized, "This Release is Private")
-		return
-	}
+	convertedRel := convertDbRelease(rel)
+
+	releaseReturn, _ := json.Marshal(&convertedRel)
+	w.WriteHeader(http.StatusOK)
+	w.Write(releaseReturn)
+	return
 }
 
 func (c *apiConfig) UpdateReleaseHandler() http.Handler {

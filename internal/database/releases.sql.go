@@ -185,6 +185,28 @@ func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Re
 	return items, nil
 }
 
+const getReleaseById = `-- name: GetReleaseById :one
+SELECT id, name, user_id, url, imgurl, song_count, is_public, is_single, created_at, updated_at FROM releases WHERE id = ?
+`
+
+func (q *Queries) GetReleaseById(ctx context.Context, id int64) (Release, error) {
+	row := q.db.QueryRowContext(ctx, getReleaseById, id)
+	var i Release
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UserID,
+		&i.Url,
+		&i.Imgurl,
+		&i.SongCount,
+		&i.IsPublic,
+		&i.IsSingle,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateRelease = `-- name: UpdateRelease :one
 UPDATE releases
   SET name = ?,

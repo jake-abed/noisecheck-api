@@ -129,6 +129,7 @@ func main() {
 		w.Write([]byte("welcome, but this an api bruh\n"))
 	})
 	r.Post("/api/webhooks/users", cfg.userWebhookHandler)
+	r.Get("/api/releases/{id}", cfg.getReleaseHandler)
 	r.Post("/api/releases", authdCreateRelease)
 	http.ListenAndServe(":3000", r)
 }

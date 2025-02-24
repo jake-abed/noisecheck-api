@@ -16,6 +16,9 @@ INSERT INTO releases (
 )
 RETURNING *;
 
+-- name: GetReleaseById :one
+SELECT * FROM releases WHERE id = ?;
+
 -- name: UpdateRelease :one
 UPDATE releases
   SET name = ?,
