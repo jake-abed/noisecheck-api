@@ -12,7 +12,6 @@ type Release struct {
 	Imgurl    string
 	SongCount int64
 	IsPublic  bool
-	IsSingle  bool
 	CreatedAt string
 	UpdatedAt string
 }

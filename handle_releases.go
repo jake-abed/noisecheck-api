@@ -91,7 +91,6 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 			Url:      "#",
 			Imgurl:   c.CloudfrontUrl + "/" + fileName,
 			IsPublic: newRelBody.IsPublic,
-			IsSingle: newRelBody.IsSingle,
 		}
 
 		newRel, err := c.Db.CreateRelease(context.Background(), newRelParams)
@@ -139,6 +138,61 @@ func (c *apiConfig) getReleaseHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func (c *apiConfig) getUserReleasesHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		claims, ok := clerk.SessionClaimsFromContext(ctx)
+		if !ok {
+			RespondWithError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+
+		user, err := clerkUser.Get(ctx, claims.Subject)
+		if err != nil {
+			fmt.Printf("error: %s", err.Error())
+		}
+
+		if user == nil {
+			RespondWithError(w, http.StatusNotFound, "user does not exist")
+			return
+		}
+
+		userId := r.PathValue("userId")
+		if userId == "" {
+			RespondWithError(w, http.StatusBadRequest, "must provide user in path")
+			return
+		}
+
+		if userId != user.ID {
+			RespondWithError(w, http.StatusUnauthorized,
+				"you may not access another user's releases")
+			return
+		}
+
+		releases, err := c.Db.GetAllReleasesByUser(context.Background(), userId)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		type allReleasesResp struct {
+			Data   []Release `json:"data"`
+		}
+
+		allReleases := []Release{}
+
+		for _, rel := range releases {
+			allReleases = append(allReleases, convertDbRelease(rel))
+		}
+
+		allResp := allReleasesResp{ Data: allReleases }
+		allRespBody, _ := json.Marshal(&allResp)
+		w.WriteHeader(http.StatusOK)
+		w.Write(allRespBody)
+		return
+	})
+}
+
 func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -178,7 +232,6 @@ func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 			Url:      relBody.Url,
 			Imgurl:   relBody.Imgurl,
 			IsPublic: relBody.IsPublic,
-			IsSingle: relBody.IsSingle,
 			ID:       int64(relBody.ID),
 		}
 
@@ -203,6 +256,5 @@ func convertDbRelease(rel database.Release) Release {
 		Url:      rel.Url,
 		Imgurl:   rel.Imgurl,
 		IsPublic: rel.IsPublic,
-		IsSingle: rel.IsSingle,
 	}
 }

@@ -4,10 +4,8 @@ INSERT INTO releases (
   user_id,
   url,
   imgUrl,
-  is_public,
-  is_single
+  is_public
 ) VALUES (
-  ?,
   ?,
   ?,
   ?,
@@ -25,7 +23,6 @@ UPDATE releases
     url = ?,
     imgUrl = ?,
     is_public = ?,
-    is_single = ?,
     updated_at = CURRENT_TIMESTAMP
   WHERE id = ?
 RETURNING *;

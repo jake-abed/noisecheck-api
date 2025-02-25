@@ -35,7 +35,6 @@ type ClerkUser struct {
 type NewReleaseBody struct {
 	Name     string `json:"name"`
 	IsPublic bool   `json:"is_public"`
-	IsSingle bool   `json:"is_single"`
 }
 
 type Release struct {
@@ -45,7 +44,6 @@ type Release struct {
 	Url       string `json:"url"`
 	Imgurl    string `json:"image_url"`
 	IsPublic  bool   `json:"is_public"`
-	IsSingle  bool   `json:"is_single"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }

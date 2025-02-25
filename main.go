@@ -108,9 +108,12 @@ func main() {
 
 	// Prep handlers with required auth wrapper.
 	createRelease, _ := cfg.createReleaseHandler().(http.Handler)
+	getUserReleases, _ := cfg.getUserReleasesHandler().(http.Handler)
 	authdCreateRelease, _ := clerkhttp.
 		WithHeaderAuthorization()(createRelease).(http.HandlerFunc)
 	clerk.SetKey(clerkKey)
+	authdGetUserReleases, _ := clerkhttp.
+		WithHeaderAuthorization()(getUserReleases).(http.HandlerFunc)
 
 	// Create Router
 	r := chi.NewRouter()
@@ -129,6 +132,7 @@ func main() {
 		w.Write([]byte("welcome, but this an api bruh\n"))
 	})
 	r.Post("/api/webhooks/users", cfg.userWebhookHandler)
+	r.Get("/api/users/{userId}/releases", authdGetUserReleases)
 	r.Get("/api/releases/{id}", cfg.getReleaseHandler)
 	r.Post("/api/releases", authdCreateRelease)
 	http.ListenAndServe(":3000", r)
