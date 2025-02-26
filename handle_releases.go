@@ -68,8 +68,10 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 		rand.Read(randBytes)
 		imagePathMod := base64.RawURLEncoding.EncodeToString(randBytes)
 
+		sanitizedRelName := sanitizeReleaseName(newRelBody.Name)
+
 		fileName := fmt.Sprintf("release/image/%s-%s.%s",
-			imagePathMod, newRelBody.Name, fileFormat)
+			imagePathMod, sanitizedRelName, fileFormat)
 
 		s3Params := &s3.PutObjectInput{
 			Bucket:      &c.S3Bucket,
@@ -175,7 +177,7 @@ func (c *apiConfig) getUserReleasesHandler() http.Handler {
 		}
 
 		type allReleasesResp struct {
-			Data   []Release `json:"data"`
+			Data []Release `json:"data"`
 		}
 
 		allReleases := []Release{}
@@ -184,7 +186,7 @@ func (c *apiConfig) getUserReleasesHandler() http.Handler {
 			allReleases = append(allReleases, convertDbRelease(rel))
 		}
 
-		allResp := allReleasesResp{ Data: allReleases }
+		allResp := allReleasesResp{Data: allReleases}
 		allRespBody, _ := json.Marshal(&allResp)
 		w.WriteHeader(http.StatusOK)
 		w.Write(allRespBody)
@@ -254,4 +256,16 @@ func convertDbRelease(rel database.Release) Release {
 		Imgurl:   rel.Imgurl,
 		IsPublic: rel.IsPublic,
 	}
+}
+
+func sanitizeReleaseName(name string) string {
+	chars := []string{" ", "?", "\n", "\r", "\t", "=", "*", "(", ")", "&", "%",
+		"$", "#", "@", "+"}
+	result := name
+
+	for _, char := range chars {
+		result = strings.ReplaceAll(result, char, "")
+	}
+
+	return result
 }
