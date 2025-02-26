@@ -8,7 +8,6 @@ type Release struct {
 	ID        int64
 	Name      string
 	UserID    string
-	Url       string
 	Imgurl    string
 	SongCount int64
 	IsPublic  bool

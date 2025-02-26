@@ -2,11 +2,9 @@
 INSERT INTO releases (
   name,
   user_id,
-  url,
   imgUrl,
   is_public
 ) VALUES (
-  ?,
   ?,
   ?,
   ?,
@@ -20,7 +18,6 @@ SELECT * FROM releases WHERE id = ?;
 -- name: UpdateRelease :one
 UPDATE releases
   SET name = ?,
-    url = ?,
     imgUrl = ?,
     is_public = ?,
     updated_at = CURRENT_TIMESTAMP

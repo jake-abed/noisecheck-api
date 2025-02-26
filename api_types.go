@@ -41,7 +41,6 @@ type Release struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
 	UserID    string `json:"user_id"`
-	Url       string `json:"url"`
 	Imgurl    string `json:"image_url"`
 	IsPublic  bool   `json:"is_public"`
 	CreatedAt string `json:"created_at"`

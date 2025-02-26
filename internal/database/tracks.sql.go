@@ -106,7 +106,7 @@ func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Tr
 }
 
 const getTracksByUser = `-- name: GetTracksByUser :many
-SELECT tracks.id, tracks.name, tracks.url, length, release_id, tracks.created_at, tracks.updated_at, releases.id, releases.name, user_id, releases.url, imgurl, song_count, is_public, releases.created_at, releases.updated_at FROM tracks
+SELECT tracks.id, tracks.name, url, length, release_id, tracks.created_at, tracks.updated_at, releases.id, releases.name, user_id, imgurl, song_count, is_public, releases.created_at, releases.updated_at FROM tracks
   INNER JOIN releases ON releases.id = tracks.release_id
   WHERE releases.user_id = ?
 `
@@ -122,7 +122,6 @@ type GetTracksByUserRow struct {
 	ID_2        int64
 	Name_2      string
 	UserID      string
-	Url_2       string
 	Imgurl      string
 	SongCount   int64
 	IsPublic    bool
@@ -150,7 +149,6 @@ func (q *Queries) GetTracksByUser(ctx context.Context, userID string) ([]GetTrac
 			&i.ID_2,
 			&i.Name_2,
 			&i.UserID,
-			&i.Url_2,
 			&i.Imgurl,
 			&i.SongCount,
 			&i.IsPublic,

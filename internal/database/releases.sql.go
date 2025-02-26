@@ -13,23 +13,20 @@ const createRelease = `-- name: CreateRelease :one
 INSERT INTO releases (
   name,
   user_id,
-  url,
   imgUrl,
   is_public
 ) VALUES (
   ?,
   ?,
   ?,
-  ?,
   ?
 )
-RETURNING id, name, user_id, url, imgurl, song_count, is_public, created_at, updated_at
+RETURNING id, name, user_id, imgurl, song_count, is_public, created_at, updated_at
 `
 
 type CreateReleaseParams struct {
 	Name     string
 	UserID   string
-	Url      string
 	Imgurl   string
 	IsPublic bool
 }
@@ -38,7 +35,6 @@ func (q *Queries) CreateRelease(ctx context.Context, arg CreateReleaseParams) (R
 	row := q.db.QueryRowContext(ctx, createRelease,
 		arg.Name,
 		arg.UserID,
-		arg.Url,
 		arg.Imgurl,
 		arg.IsPublic,
 	)
@@ -47,7 +43,6 @@ func (q *Queries) CreateRelease(ctx context.Context, arg CreateReleaseParams) (R
 		&i.ID,
 		&i.Name,
 		&i.UserID,
-		&i.Url,
 		&i.Imgurl,
 		&i.SongCount,
 		&i.IsPublic,
@@ -67,7 +62,7 @@ func (q *Queries) DeleteReleaseById(ctx context.Context, id int64) error {
 }
 
 const getAllPublicReleases = `-- name: GetAllPublicReleases :many
-SELECT id, name, user_id, url, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE is_public = TRUE
+SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE is_public = TRUE
 `
 
 func (q *Queries) GetAllPublicReleases(ctx context.Context) ([]Release, error) {
@@ -83,7 +78,6 @@ func (q *Queries) GetAllPublicReleases(ctx context.Context) ([]Release, error) {
 			&i.ID,
 			&i.Name,
 			&i.UserID,
-			&i.Url,
 			&i.Imgurl,
 			&i.SongCount,
 			&i.IsPublic,
@@ -104,7 +98,7 @@ func (q *Queries) GetAllPublicReleases(ctx context.Context) ([]Release, error) {
 }
 
 const getAllPublicReleasesByUser = `-- name: GetAllPublicReleasesByUser :many
-SELECT id, name, user_id, url, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE is_public = TRUE AND user_id = ?
+SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE is_public = TRUE AND user_id = ?
 `
 
 func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string) ([]Release, error) {
@@ -120,7 +114,6 @@ func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string)
 			&i.ID,
 			&i.Name,
 			&i.UserID,
-			&i.Url,
 			&i.Imgurl,
 			&i.SongCount,
 			&i.IsPublic,
@@ -141,7 +134,7 @@ func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string)
 }
 
 const getAllReleasesByUser = `-- name: GetAllReleasesByUser :many
-SELECT id, name, user_id, url, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE user_id = ?
+SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE user_id = ?
 `
 
 func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Release, error) {
@@ -157,7 +150,6 @@ func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Re
 			&i.ID,
 			&i.Name,
 			&i.UserID,
-			&i.Url,
 			&i.Imgurl,
 			&i.SongCount,
 			&i.IsPublic,
@@ -178,7 +170,7 @@ func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Re
 }
 
 const getReleaseById = `-- name: GetReleaseById :one
-SELECT id, name, user_id, url, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE id = ?
+SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE id = ?
 `
 
 func (q *Queries) GetReleaseById(ctx context.Context, id int64) (Release, error) {
@@ -188,7 +180,6 @@ func (q *Queries) GetReleaseById(ctx context.Context, id int64) (Release, error)
 		&i.ID,
 		&i.Name,
 		&i.UserID,
-		&i.Url,
 		&i.Imgurl,
 		&i.SongCount,
 		&i.IsPublic,
@@ -201,17 +192,15 @@ func (q *Queries) GetReleaseById(ctx context.Context, id int64) (Release, error)
 const updateRelease = `-- name: UpdateRelease :one
 UPDATE releases
   SET name = ?,
-    url = ?,
     imgUrl = ?,
     is_public = ?,
     updated_at = CURRENT_TIMESTAMP
   WHERE id = ?
-RETURNING id, name, user_id, url, imgurl, song_count, is_public, created_at, updated_at
+RETURNING id, name, user_id, imgurl, song_count, is_public, created_at, updated_at
 `
 
 type UpdateReleaseParams struct {
 	Name     string
-	Url      string
 	Imgurl   string
 	IsPublic bool
 	ID       int64
@@ -220,7 +209,6 @@ type UpdateReleaseParams struct {
 func (q *Queries) UpdateRelease(ctx context.Context, arg UpdateReleaseParams) (Release, error) {
 	row := q.db.QueryRowContext(ctx, updateRelease,
 		arg.Name,
-		arg.Url,
 		arg.Imgurl,
 		arg.IsPublic,
 		arg.ID,
@@ -230,7 +218,6 @@ func (q *Queries) UpdateRelease(ctx context.Context, arg UpdateReleaseParams) (R
 		&i.ID,
 		&i.Name,
 		&i.UserID,
-		&i.Url,
 		&i.Imgurl,
 		&i.SongCount,
 		&i.IsPublic,

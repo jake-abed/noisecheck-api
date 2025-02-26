@@ -88,7 +88,6 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 		newRelParams := database.CreateReleaseParams{
 			Name:     newRelBody.Name,
 			UserID:   user.ID,
-			Url:      "#",
 			Imgurl:   c.CloudfrontUrl + "/" + fileName,
 			IsPublic: newRelBody.IsPublic,
 		}
@@ -229,7 +228,6 @@ func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 
 		params := database.UpdateReleaseParams{
 			Name:     relBody.Name,
-			Url:      relBody.Url,
 			Imgurl:   relBody.Imgurl,
 			IsPublic: relBody.IsPublic,
 			ID:       int64(relBody.ID),
@@ -253,7 +251,6 @@ func convertDbRelease(rel database.Release) Release {
 	return Release{
 		ID:       int(rel.ID),
 		Name:     rel.Name,
-		Url:      rel.Url,
 		Imgurl:   rel.Imgurl,
 		IsPublic: rel.IsPublic,
 	}
