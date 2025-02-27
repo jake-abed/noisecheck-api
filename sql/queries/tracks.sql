@@ -7,10 +7,8 @@ SELECT * FROM tracks WHERE id = ?;
 -- name: AddTrack :one
 INSERT INTO tracks (
   name,
-  url,
   release_id
 ) VALUES (
-  ?,
   ?,
   ?
 ) RETURNING *;

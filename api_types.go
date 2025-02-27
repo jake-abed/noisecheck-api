@@ -50,7 +50,6 @@ type Release struct {
 type Track struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
-	Url       string `json:"url"`
 	ReleaseId int    `json:"release_id"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`

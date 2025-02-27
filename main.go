@@ -26,6 +26,7 @@ func RespondWithError(
 }
 
 func main() {
+	// Grabs all documented keys
 	cfg := createApiConfig()
 
 	// Prep handlers with required auth wrapper.
@@ -57,5 +58,6 @@ func main() {
 	r.Get("/api/users/{userId}/releases", authdGetUserReleases)
 	r.Get("/api/releases/{id}", cfg.getReleaseHandler)
 	r.Post("/api/releases", authdCreateRelease)
+	r.Get("/api/tracks/{id}", cfg.getTrackHandler)
 	http.ListenAndServe(":3000", r)
 }

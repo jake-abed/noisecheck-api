@@ -12,28 +12,24 @@ import (
 const addTrack = `-- name: AddTrack :one
 INSERT INTO tracks (
   name,
-  url,
   release_id
 ) VALUES (
   ?,
-  ?,
   ?
-) RETURNING id, name, url, length, release_id, created_at, updated_at
+) RETURNING id, name, length, release_id, created_at, updated_at
 `
 
 type AddTrackParams struct {
 	Name      string
-	Url       string
 	ReleaseID int64
 }
 
 func (q *Queries) AddTrack(ctx context.Context, arg AddTrackParams) (Track, error) {
-	row := q.db.QueryRowContext(ctx, addTrack, arg.Name, arg.Url, arg.ReleaseID)
+	row := q.db.QueryRowContext(ctx, addTrack, arg.Name, arg.ReleaseID)
 	var i Track
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Url,
 		&i.Length,
 		&i.ReleaseID,
 		&i.CreatedAt,
@@ -52,7 +48,7 @@ func (q *Queries) DeleteTrackById(ctx context.Context, id int64) error {
 }
 
 const getTrackById = `-- name: GetTrackById :one
-SELECT id, name, url, length, release_id, created_at, updated_at FROM tracks WHERE id = ?
+SELECT id, name, length, release_id, created_at, updated_at FROM tracks WHERE id = ?
 `
 
 func (q *Queries) GetTrackById(ctx context.Context, id int64) (Track, error) {
@@ -61,7 +57,6 @@ func (q *Queries) GetTrackById(ctx context.Context, id int64) (Track, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Url,
 		&i.Length,
 		&i.ReleaseID,
 		&i.CreatedAt,
@@ -71,7 +66,7 @@ func (q *Queries) GetTrackById(ctx context.Context, id int64) (Track, error) {
 }
 
 const getTracksByRelease = `-- name: GetTracksByRelease :many
-SELECT id, name, url, length, release_id, created_at, updated_at FROM tracks WHERE release_id = ?
+SELECT id, name, length, release_id, created_at, updated_at FROM tracks WHERE release_id = ?
 `
 
 func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Track, error) {
@@ -86,7 +81,6 @@ func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Tr
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Url,
 			&i.Length,
 			&i.ReleaseID,
 			&i.CreatedAt,
@@ -106,7 +100,7 @@ func (q *Queries) GetTracksByRelease(ctx context.Context, releaseID int64) ([]Tr
 }
 
 const getTracksByUser = `-- name: GetTracksByUser :many
-SELECT tracks.id, tracks.name, url, length, release_id, tracks.created_at, tracks.updated_at, releases.id, releases.name, user_id, imgurl, song_count, is_public, releases.created_at, releases.updated_at FROM tracks
+SELECT tracks.id, tracks.name, length, release_id, tracks.created_at, tracks.updated_at, releases.id, releases.name, user_id, imgurl, song_count, is_public, releases.created_at, releases.updated_at FROM tracks
   INNER JOIN releases ON releases.id = tracks.release_id
   WHERE releases.user_id = ?
 `
@@ -114,7 +108,6 @@ SELECT tracks.id, tracks.name, url, length, release_id, tracks.created_at, track
 type GetTracksByUserRow struct {
 	ID          int64
 	Name        string
-	Url         string
 	Length      int64
 	ReleaseID   int64
 	CreatedAt   string
@@ -141,7 +134,6 @@ func (q *Queries) GetTracksByUser(ctx context.Context, userID string) ([]GetTrac
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Url,
 			&i.Length,
 			&i.ReleaseID,
 			&i.CreatedAt,

@@ -18,7 +18,6 @@ type Release struct {
 type Track struct {
 	ID        int64
 	Name      string
-	Url       string
 	Length    int64
 	ReleaseID int64
 	CreatedAt string
