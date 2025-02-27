@@ -15,6 +15,7 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkUser "github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jake-abed/noisecheck-api/internal/database"
+	"github.com/jake-abed/noisecheck-api/internal/utils"
 )
 
 const MAX_IMG_SIZE = 10 << 18
@@ -68,7 +69,7 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 		rand.Read(randBytes)
 		imagePathMod := base64.RawURLEncoding.EncodeToString(randBytes)
 
-		sanitizedRelName := sanitizeReleaseName(newRelBody.Name)
+		sanitizedRelName := utils.SanitizeReleaseName(newRelBody.Name)
 
 		fileName := fmt.Sprintf("release/image/%s-%s.%s",
 			imagePathMod, sanitizedRelName, fileFormat)
@@ -256,16 +257,4 @@ func convertDbRelease(rel database.Release) Release {
 		Imgurl:   rel.Imgurl,
 		IsPublic: rel.IsPublic,
 	}
-}
-
-func sanitizeReleaseName(name string) string {
-	chars := []string{" ", "?", "\n", "\r", "\t", "=", "*", "(", ")", "&", "%",
-		"$", "#", "@", "+"}
-	result := name
-
-	for _, char := range chars {
-		result = strings.ReplaceAll(result, char, "")
-	}
-
-	return result
 }
