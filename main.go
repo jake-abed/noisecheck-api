@@ -1,14 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/jake-abed/noisecheck-api/internal/database"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -28,6 +32,18 @@ func RespondWithError(
 func main() {
 	// Grabs all documented keys
 	cfg := createApiConfig()
+	dbURL := fmt.Sprintf("%s?authToken=%s", cfg.TursoUrl, cfg.TursoToken)
+
+	// Try to open DB and exit if it won't work.
+	db, err := sql.Open("libsql", dbURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to open db: %s: %s", dbURL, err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	dbQueries := database.New(db)
+	cfg.Db = dbQueries
 
 	// Prep handlers with required auth wrapper.
 	createRelease, _ := cfg.createReleaseHandler().(http.Handler)

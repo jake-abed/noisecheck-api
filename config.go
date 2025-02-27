@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -22,6 +20,8 @@ type apiConfig struct {
 	S3Region      string
 	CloudfrontUrl string
 	ClerkKey      string
+	TursoToken    string
+	TursoUrl      string
 }
 
 func createApiConfig() apiConfig {
@@ -44,18 +44,6 @@ func createApiConfig() apiConfig {
 	if clerkKey == "" {
 		log.Fatal("CLERK_KEY environment variable is not set")
 	}
-
-	dbURL := fmt.Sprintf("%s?authToken=%s", tursoUrl, tursoToken)
-
-	// Try to open DB and exit if it won't work.
-	db, err := sql.Open("libsql", dbURL)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open db: %s: %s", dbURL, err)
-		os.Exit(1)
-	}
-	defer db.Close()
-
-	dbQueries := database.New(db)
 
 	s3Config, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -80,12 +68,13 @@ func createApiConfig() apiConfig {
 	}
 
 	cfg := apiConfig{
-		Db:            dbQueries,
 		S3Bucket:      s3Bucket,
 		S3Client:      s3Client,
 		S3Region:      s3Region,
 		CloudfrontUrl: cloudfrontUrl,
 		ClerkKey:      clerkKey,
+		TursoToken:    tursoToken,
+		TursoUrl:      tursoUrl,
 	}
 
 	return cfg
