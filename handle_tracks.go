@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -18,6 +22,7 @@ import (
 	"github.com/jake-abed/noisecheck-api/internal/utils"
 )
 
+// Around 600 MB
 const MAX_TRACK_SIZE = 8 << 29
 
 func (c *apiConfig) getTrackHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,18 +101,49 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 		}
 		fileFormat := strings.Replace(contentType, "audio/", "", 1)
 
+		audioFile, err := os.CreateTemp("", "noisecheck-upload."+fileFormat)
+		defer os.Remove(os.TempDir() + "noisecheck-upload." + fileFormat)
+		defer file.Close()
+		io.Copy(audioFile, file)
+		audioFile.Seek(0, io.SeekStart)
+
+		length, format, err := getAudioFileInfo(os.TempDir()+"noisecheck-upload.", +fileFormat)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		mp3FilePath, err := convertSourceAudioToMp3(audioFile.Name())
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		mp3File, err := os.Open(mp3FilePath)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer os.Remove(mp3FilePath)
+		defer mp3File.Close()
+		mp3File.Seek(0, io.SeekStart)
+
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
 		randBytes := make([]byte, 8)
 		rand.Read(randBytes)
-		imagePathMod := base64.RawURLEncoding.EncodeToString(randBytes)
+		losslessPathMod := base64.RawURLEncoding.EncodeToString(randBytes)
 
-		sanitizedRelName := utils.SanitizeReleaseName(newTrackBody.Name)
+		sanitizedName := utils.SanitizeReleaseName(newTrackBody.Name)
 
-		fileName := fmt.Sprintf("track/audio/%s-%s.%s",
-			imagePathMod, sanitizedRelName, fileFormat)
+		losslessFileName := fmt.Sprintf("track/audio/lossless/%s-%s.%s",
+			losslessPathMod, sanitizedName, fileFormat)
 
 		s3Params := &s3.PutObjectInput{
 			Bucket:      &c.S3Bucket,
-			Key:         &fileName,
+			Key:         &losslessFileName,
 			Body:        file,
 			ContentType: &contentType,
 		}
@@ -119,10 +155,32 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 			return
 		}
 
+		randBytes2 := make([]byte, 8)
+		rand.Read(randBytes2)
+		mp3PathMod := base64.RawURLEncoding.EncodeToString(randBytes2)
+
+		mp3FileName := fmt.Sprintf("track/audio/mp3/%s-%s.%s", mp3PathMod,
+			sanitizedName, "mp3")
+
+		s3ParamsMp3 := &s3.PutObjectInput{
+			Bucket: &c.S3Bucket,
+			Key:    &mp3FileName,
+			Body:   mp3File,
+		}
+
+		_, err = c.S3Client.PutObject(context.Background(), s3ParamsMp3)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "AWS Error")
+			fmt.Println(err)
+			return
+		}
+
 		newRelParams := database.CreateTrackParams{
-			Name:      newTrackBody.Name,
-			ReleaseID: int64(newTrackBody.ReleaseId),
-			TrackUrl:  c.CloudfrontUrl + "/" + fileName,
+			Name:            newTrackBody.Name,
+			Length:          length,
+			ReleaseID:       int64(newTrackBody.ReleaseId),
+			OriginalFileUrl: c.CloudfrontUrl + "/" + losslessFileName,
+			Mp3FileUrl:      c.CloudfrontUrl + "/" + mp3FileName,
 		}
 
 		addedTrack, err := c.Db.CreateTrack(context.Background(), newRelParams)
@@ -140,7 +198,6 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 		w.WriteHeader(http.StatusOK)
 		w.Write(trackReturn)
 		return
-
 	})
 }
 
@@ -152,4 +209,83 @@ func convertDbTrack(dbTrack database.Track) Track {
 		CreatedAt: dbTrack.CreatedAt,
 		UpdatedAt: dbTrack.UpdatedAt,
 	}
+}
+
+type ffprobeResult struct {
+	Streams []ffprobeStream `json:"streams"`
+	Format  ffprobeFormat   `json:"format"`
+}
+
+type ffprobeStream struct {
+	Duration string `json:"duration"`
+}
+
+type ffprobeFormat struct {
+	FormatName string `json:"format_name"`
+}
+
+func getAudioFileInfo(filePath string) (int64, string, error) {
+	ffprobeCmd := exec.Command("ffprobe", "-sexagesimal", "-v", "error",
+		"-print_format", "json", "-show_format", "-show_streams", filePath)
+
+	buf := &bytes.Buffer{}
+	ffprobeCmd.Stdout = buf
+	err := ffprobeCmd.Run()
+
+	if err != nil {
+		return 0, "", err
+	}
+
+	res := ffprobeResult{}
+	err = json.Unmarshal(buf.Bytes(), &res)
+	if err != nil {
+		return 0, "", err
+	}
+
+	seconds, err := parseDurationString(res.Streams[0].Duration)
+
+	return seconds, res.Format.FormatName, nil
+}
+
+func convertSourceAudioToMp3(filePath string) (string, error) {
+	outputFilePath := filePath + ".processing"
+	ffmpegCmd := exec.Command("ffmpeg", "-i", filePath, "-vn", "-ar", "44100",
+		"-ac", "2", "-b:a", "192k", outputFilePath)
+	err := ffmpegCmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return outputFilePath, nil
+}
+
+func parseDurationString(duration string) (int64, error) {
+	times := strings.Split(duration, ":")
+
+	if len(times) != 4 {
+		return 0, fmt.Errorf("invalid duration string: %s", duration)
+	}
+
+	hourString := times[0]
+	minString := times[1]
+	secString := times[2]
+
+	hours, err := strconv.ParseInt(hourString, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	minutes, err := strconv.ParseInt(minString, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	seconds, err := strconv.ParseInt(secString, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	hoursSeconds := hours * 60 * 60
+	minutesSeconds := minutes * 60
+
+	return hoursSeconds + minutesSeconds + seconds, nil
 }

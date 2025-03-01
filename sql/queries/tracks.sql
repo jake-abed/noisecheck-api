@@ -7,9 +7,13 @@ SELECT * FROM tracks WHERE id = ?;
 -- name: CreateTrack :one
 INSERT INTO tracks (
   name,
-  release_id,
-  track_url
+  length,
+  original_file_url,
+  mp3_file_url,
+  release_id
 ) VALUES (
+  ?,
+  ?,
   ?,
   ?,
   ?

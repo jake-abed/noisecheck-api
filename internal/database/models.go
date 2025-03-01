@@ -16,13 +16,14 @@ type Release struct {
 }
 
 type Track struct {
-	ID        int64
-	Name      string
-	Length    int64
-	TrackUrl  string
-	ReleaseID int64
-	CreatedAt string
-	UpdatedAt string
+	ID              int64
+	Name            string
+	Length          int64
+	OriginalFileUrl string
+	Mp3FileUrl      string
+	ReleaseID       int64
+	CreatedAt       string
+	UpdatedAt       string
 }
 
 type User struct {
