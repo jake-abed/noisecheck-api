@@ -4,14 +4,19 @@ SELECT * FROM tracks WHERE release_id = ?;
 -- name: GetTrackById :one
 SELECT * FROM tracks WHERE id = ?;
 
--- name: AddTrack :one
+-- name: CreateTrack :one
 INSERT INTO tracks (
   name,
-  release_id
+  release_id,
+  track_url
 ) VALUES (
+  ?,
   ?,
   ?
 ) RETURNING *;
+
+-- name: GetTracksByReleaseId :many
+SELECT * FROM tracks WHERE release_id = ?;
 
 -- name: GetTracksByUser :many
 SELECT * FROM tracks

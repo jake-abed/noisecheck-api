@@ -8,8 +8,8 @@ type User struct {
 	Id        string `json:"id"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type ClerkUser struct {
@@ -34,23 +34,33 @@ type ClerkUser struct {
 
 type NewReleaseBody struct {
 	Name     string `json:"name"`
-	IsPublic bool   `json:"is_public"`
+	IsPublic bool   `json:"isPublic"`
 }
 
 type Release struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
-	UserID    string `json:"user_id"`
-	Imgurl    string `json:"image_url"`
-	IsPublic  bool   `json:"is_public"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	UserID    string `json:"userId"`
+	Imgurl    string `json:"imageUrl"`
+	IsPublic  bool   `json:"isPublic"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type NewTrackBody struct {
+	Name      string `json:"name"`
+	ReleaseId int    `json:"releaseId"`
 }
 
 type Track struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
-	ReleaseId int    `json:"release_id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ReleaseId int    `json:"releaseId"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type ReleaseWithTracks struct {
+	Release Release `json:"release"`
+	Tracks  []Track `json:"tracks"`
 }

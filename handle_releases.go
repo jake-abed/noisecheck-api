@@ -132,9 +132,24 @@ func (c *apiConfig) getReleaseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	convertedRel := convertDbRelease(rel)
+	tracks, err := c.Db.GetTracksByRelease(context.Background(), idInt)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	releaseReturn, _ := json.Marshal(&convertedRel)
+	convertedRel := convertDbRelease(rel)
+	convertedTracks := []Track{}
+
+	for _, t := range tracks {
+		convertedTracks = append(convertedTracks, convertDbTrack(t))
+	}
+
+	releaseWithTracks := ReleaseWithTracks{
+		Release: convertedRel,
+		Tracks:  convertedTracks,
+	}
+	releaseReturn, _ := json.Marshal(&releaseWithTracks)
 	w.WriteHeader(http.StatusOK)
 	w.Write(releaseReturn)
 	return
