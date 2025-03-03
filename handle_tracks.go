@@ -95,11 +95,19 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 
 		contentType := fileHeader.Header.Get("Content-Type")
 		fileType, _, err := mime.ParseMediaType(contentType)
-		if fileType != "audio/wav" && fileType != "audio/flac" {
+		if validAudioType(fileType) {
+			fmt.Println(fileType)
 			RespondWithError(w, http.StatusUnsupportedMediaType, "Wrong file type!")
 			return
 		}
-		fileFormat := strings.Replace(contentType, "audio/", "", 1)
+
+		var fileFormat string
+
+		if strings.Contains(fileType, "wav") {
+			fileFormat = "wav"
+		} else {
+			fileFormat = "flac"
+		}
 
 		audioFile, err := os.CreateTemp("", "noisecheck-upload."+fileFormat)
 		defer os.Remove(os.TempDir() + "noisecheck-upload." + fileFormat)
@@ -107,13 +115,13 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 		io.Copy(audioFile, file)
 		audioFile.Seek(0, io.SeekStart)
 
-		length, format, err := getAudioFileInfo(os.TempDir()+"noisecheck-upload.", +fileFormat)
+		length, _, err := getAudioFileInfo(audioFile.Name())
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		mp3FilePath, err := convertSourceAudioToMp3(audioFile.Name())
+		mp3FilePath, err := convertSourceAudioToMp3(audioFile.Name(), fileFormat)
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -127,11 +135,6 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 		defer mp3File.Close()
 		mp3File.Seek(0, io.SeekStart)
 
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
 		randBytes := make([]byte, 8)
 		rand.Read(randBytes)
 		losslessPathMod := base64.RawURLEncoding.EncodeToString(randBytes)
@@ -144,7 +147,7 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 		s3Params := &s3.PutObjectInput{
 			Bucket:      &c.S3Bucket,
 			Key:         &losslessFileName,
-			Body:        file,
+			Body:        audioFile,
 			ContentType: &contentType,
 		}
 
@@ -233,6 +236,7 @@ func getAudioFileInfo(filePath string) (int64, string, error) {
 	err := ffprobeCmd.Run()
 
 	if err != nil {
+		fmt.Println("Error occurred in getting file info: ", filePath)
 		return 0, "", err
 	}
 
@@ -247,12 +251,13 @@ func getAudioFileInfo(filePath string) (int64, string, error) {
 	return seconds, res.Format.FormatName, nil
 }
 
-func convertSourceAudioToMp3(filePath string) (string, error) {
-	outputFilePath := filePath + ".processing"
-	ffmpegCmd := exec.Command("ffmpeg", "-i", filePath, "-vn", "-ar", "44100",
-		"-ac", "2", "-b:a", "192k", outputFilePath)
+func convertSourceAudioToMp3(filePath string, format string) (string, error) {
+	outputFilePath := strings.ReplaceAll(filePath, format, "mp3")
+	ffmpegCmd := exec.Command("ffmpeg", "-i", filePath, "-vn",
+		"-ar", "44100", "-ac", "2", "-b:a", "192k", "-f", "mp3", outputFilePath)
 	err := ffmpegCmd.Run()
 	if err != nil {
+		fmt.Println(outputFilePath, " - ", filePath)
 		return "", err
 	}
 	return outputFilePath, nil
@@ -288,4 +293,11 @@ func parseDurationString(duration string) (int64, error) {
 	minutesSeconds := minutes * 60
 
 	return hoursSeconds + minutesSeconds + seconds, nil
+}
+
+func validAudioType(audioType string) bool {
+	return audioType != "audio/vnd.wave" && audioType != "audio/wav" &&
+		audioType != "audio/flac" && audioType != "audio/wave" &&
+		audioType != "audio/vnd.wav" && audioType != "audio/x-wav" &&
+		audioType != "audio/x-pn-wav" && audioType != "audio/x-flac"
 }

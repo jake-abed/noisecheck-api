@@ -53,6 +53,9 @@ func main() {
 	clerk.SetKey(cfg.ClerkKey)
 	authdGetUserReleases, _ := clerkhttp.
 		WithHeaderAuthorization()(getUserReleases).(http.HandlerFunc)
+	createTrack, _ := cfg.createTrackHandler().(http.Handler)
+	authdCreateTrack, _ := clerkhttp.
+		WithHeaderAuthorization()(createTrack).(http.HandlerFunc)
 
 	// Create Router
 	r := chi.NewRouter()
@@ -75,5 +78,6 @@ func main() {
 	r.Get("/api/releases/{id}", cfg.getReleaseHandler)
 	r.Post("/api/releases", authdCreateRelease)
 	r.Get("/api/tracks/{id}", cfg.getTrackHandler)
+	r.Post("/api/tracks", authdCreateTrack)
 	http.ListenAndServe(":3000", r)
 }
