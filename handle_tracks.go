@@ -206,11 +206,14 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 
 func convertDbTrack(dbTrack database.Track) Track {
 	return Track{
-		ID:        int(dbTrack.ID),
-		Name:      dbTrack.Name,
-		ReleaseId: int(dbTrack.ReleaseID),
-		CreatedAt: dbTrack.CreatedAt,
-		UpdatedAt: dbTrack.UpdatedAt,
+		ID:              int(dbTrack.ID),
+		Name:            dbTrack.Name,
+		Length:          int(dbTrack.Length),
+		OriginalFileUrl: dbTrack.OriginalFileUrl,
+		Mp3FileUrl:      dbTrack.Mp3FileUrl,
+		ReleaseId:       int(dbTrack.ReleaseID),
+		CreatedAt:       dbTrack.CreatedAt,
+		UpdatedAt:       dbTrack.UpdatedAt,
 	}
 }
 

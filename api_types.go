@@ -53,11 +53,14 @@ type NewTrackBody struct {
 }
 
 type Track struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	ReleaseId int    `json:"releaseId"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID              int    `json:"id"`
+	Name            string `json:"name"`
+	Length          int    `json:"length"`
+	OriginalFileUrl string `json:"originalFileUrl"`
+	Mp3FileUrl      string `json:"mp3FileUrl"`
+	ReleaseId       int    `json:"releaseId"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
 }
 
 type ReleaseWithTracks struct {
