@@ -48,9 +48,12 @@ func main() {
 	// Prep handlers with required auth wrapper.
 	createRelease, _ := cfg.createReleaseHandler().(http.Handler)
 	getUserReleases, _ := cfg.getUserReleasesHandler().(http.Handler)
+	deleteRelease, _ := cfg.deleteReleaseHandler().(http.Handler)
 	authdCreateRelease, _ := clerkhttp.
 		WithHeaderAuthorization()(createRelease).(http.HandlerFunc)
 	clerk.SetKey(cfg.ClerkKey)
+	authdDeleteRelease, _ := clerkhttp.
+		WithHeaderAuthorization()(deleteRelease).(http.HandlerFunc)
 	authdGetUserReleases, _ := clerkhttp.
 		WithHeaderAuthorization()(getUserReleases).(http.HandlerFunc)
 	createTrack, _ := cfg.createTrackHandler().(http.Handler)
@@ -76,6 +79,8 @@ func main() {
 	r.Post("/api/webhooks/users", cfg.userWebhookHandler)
 	r.Get("/api/users/{userId}/releases", authdGetUserReleases)
 	r.Get("/api/releases/{id}", cfg.getReleaseHandler)
+	r.Delete("/api/releases/{id}", authdDeleteRelease)
+	r.Get("/api/releases", cfg.getAllReleasesHandler)
 	r.Post("/api/releases", authdCreateRelease)
 	r.Get("/api/tracks/{id}", cfg.getTrackHandler)
 	r.Post("/api/tracks", authdCreateTrack)

@@ -113,6 +113,33 @@ func (c *apiConfig) createReleaseHandler() http.Handler {
 	})
 }
 
+func (c *apiConfig) getAllReleasesHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	releases, err := c.Db.GetAllPublicReleases(context.Background())
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	type allReleasesResp struct {
+		Data []Release `json:"data"`
+	}
+
+	allReleases := []Release{}
+
+	for _, rel := range releases {
+		allReleases = append(allReleases, convertDbRelease(rel))
+	}
+
+	allResp := allReleasesResp{Data: allReleases}
+	allRespBody, _ := json.Marshal(&allResp)
+	w.WriteHeader(http.StatusOK)
+	w.Write(allRespBody)
+	return
+}
+
 func (c *apiConfig) getReleaseHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
@@ -210,6 +237,49 @@ func (c *apiConfig) getUserReleasesHandler() http.Handler {
 	})
 }
 
+func (c *apiConfig) deleteReleaseHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		claims, ok := clerk.SessionClaimsFromContext(ctx)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"access": "unauthorized"}`))
+			return
+		}
+
+		user, err := clerkUser.Get(ctx, claims.Subject)
+		if err != nil {
+			fmt.Printf("error: %s", err.Error())
+		}
+
+		if user == nil {
+			w.Write([]byte(`{"error": "User does not exist"}`))
+			return
+		}
+
+		id := r.PathValue("id")
+		if id == "" {
+			RespondWithError(w, http.StatusBadRequest, "must provide user in path")
+			return
+		}
+
+		idInt, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid Release Id")
+			return
+		}
+
+		err = c.Db.DeleteReleaseById(context.Background(), idInt)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		return
+	})
+}
+
 func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -269,6 +339,7 @@ func convertDbRelease(rel database.Release) Release {
 	return Release{
 		ID:       int(rel.ID),
 		Name:     rel.Name,
+		UserID:   rel.UserID,
 		Imgurl:   rel.Imgurl,
 		IsPublic: rel.IsPublic,
 	}
