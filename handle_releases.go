@@ -337,11 +337,11 @@ func (c *apiConfig) UpdateReleaseHandler() http.Handler {
 
 func convertDbRelease(rel database.Release) Release {
 	return Release{
-		ID:       int(rel.ID),
-		Name:     rel.Name,
-		UserID:   rel.UserID,
-		Imgurl:   rel.Imgurl,
-		IsPublic: rel.IsPublic,
+		ID:        int(rel.ID),
+		Name:      rel.Name,
+		UserID:    rel.UserID,
+		Imgurl:    rel.Imgurl,
+		IsPublic:  rel.IsPublic,
 		CreatedAt: rel.CreatedAt,
 		UpdatedAt: rel.UpdatedAt,
 	}

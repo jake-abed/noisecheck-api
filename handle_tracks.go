@@ -180,7 +180,7 @@ func (c *apiConfig) createTrackHandler() http.Handler {
 
 		newRelParams := database.CreateTrackParams{
 			Name:            newTrackBody.Name,
-			Length:          length,
+			Length:          int64(length),
 			ReleaseID:       int64(newTrackBody.ReleaseId),
 			OriginalFileUrl: c.CloudfrontUrl + "/" + losslessFileName,
 			Mp3FileUrl:      c.CloudfrontUrl + "/" + mp3FileName,
@@ -230,7 +230,7 @@ type ffprobeFormat struct {
 	FormatName string `json:"format_name"`
 }
 
-func getAudioFileInfo(filePath string) (int64, string, error) {
+func getAudioFileInfo(filePath string) (float64, string, error) {
 	ffprobeCmd := exec.Command("ffprobe", "-sexagesimal", "-v", "error",
 		"-print_format", "json", "-show_format", "-show_streams", filePath)
 
@@ -250,6 +250,7 @@ func getAudioFileInfo(filePath string) (int64, string, error) {
 	}
 
 	seconds, err := parseDurationString(res.Streams[0].Duration)
+	fmt.Println(err)
 
 	return seconds, res.Format.FormatName, nil
 }
@@ -266,10 +267,12 @@ func convertSourceAudioToMp3(filePath string, format string) (string, error) {
 	return outputFilePath, nil
 }
 
-func parseDurationString(duration string) (int64, error) {
+func parseDurationString(duration string) (float64, error) {
 	times := strings.Split(duration, ":")
 
-	if len(times) != 4 {
+	fmt.Println(times[2])
+
+	if len(times) < 3 {
 		return 0, fmt.Errorf("invalid duration string: %s", duration)
 	}
 
@@ -277,17 +280,17 @@ func parseDurationString(duration string) (int64, error) {
 	minString := times[1]
 	secString := times[2]
 
-	hours, err := strconv.ParseInt(hourString, 10, 64)
+	hours, err := strconv.ParseFloat(hourString, 10)
 	if err != nil {
 		return 0, err
 	}
 
-	minutes, err := strconv.ParseInt(minString, 10, 64)
+	minutes, err := strconv.ParseFloat(minString, 10)
 	if err != nil {
 		return 0, err
 	}
 
-	seconds, err := strconv.ParseInt(secString, 10, 64)
+	seconds, err := strconv.ParseFloat(secString, 10)
 	if err != nil {
 		return 0, err
 	}
