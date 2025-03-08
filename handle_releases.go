@@ -342,5 +342,7 @@ func convertDbRelease(rel database.Release) Release {
 		UserID:   rel.UserID,
 		Imgurl:   rel.Imgurl,
 		IsPublic: rel.IsPublic,
+		CreatedAt: rel.CreatedAt,
+		UpdatedAt: rel.UpdatedAt,
 	}
 }
