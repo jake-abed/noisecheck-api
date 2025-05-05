@@ -24,6 +24,13 @@ UPDATE releases
   WHERE id = ?
 RETURNING *;
 
+-- name: GetPublicReleases :many
+SELECT releases.*, users.username FROM releases
+  INNER JOIN users ON users.id = releases.user_id
+  WHERE is_public = TRUE
+  ORDER BY releases.created_at DESC
+  LIMIT 20 OFFSET ?;
+
 -- name: GetAllPublicReleases :many
 SELECT * FROM releases WHERE is_public = TRUE;
 

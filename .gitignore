@@ -21,3 +21,5 @@ go.work.sum
 .env 
 
 sql/schema/*.sh
+
+noisecheck-api

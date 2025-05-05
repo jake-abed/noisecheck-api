@@ -47,6 +47,17 @@ type Release struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+type PublicRelease struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	UserID    string `json:"userId"`
+	Imgurl    string `json:"imageUrl"`
+	IsPublic  bool   `json:"isPublic"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+	Username string `json:"username"`
+}
+
 type NewTrackBody struct {
 	Name      string `json:"name"`
 	ReleaseId int    `json:"releaseId"`

@@ -169,6 +169,59 @@ func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Re
 	return items, nil
 }
 
+const getPublicReleases = `-- name: GetPublicReleases :many
+SELECT releases.id, releases.name, releases.user_id, releases.imgurl, releases.song_count, releases.is_public, releases.created_at, releases.updated_at, users.username FROM releases
+  INNER JOIN users ON users.id = releases.user_id
+  WHERE is_public = TRUE
+  ORDER BY releases.created_at DESC
+  LIMIT 20 OFFSET ?
+`
+
+type GetPublicReleasesRow struct {
+	ID        int64
+	Name      string
+	UserID    string
+	Imgurl    string
+	SongCount int64
+	IsPublic  bool
+	CreatedAt string
+	UpdatedAt string
+	Username  string
+}
+
+func (q *Queries) GetPublicReleases(ctx context.Context, offset int64) ([]GetPublicReleasesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPublicReleases, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPublicReleasesRow
+	for rows.Next() {
+		var i GetPublicReleasesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.UserID,
+			&i.Imgurl,
+			&i.SongCount,
+			&i.IsPublic,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Username,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReleaseById = `-- name: GetReleaseById :one
 SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE id = ?
 `
