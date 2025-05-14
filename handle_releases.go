@@ -226,20 +226,38 @@ func (c *apiConfig) getUserReleasesHandler() http.Handler {
 			return
 		}
 
-		releases, err := c.Db.GetAllReleasesByUser(context.Background(), userId)
+		page := r.URL.Query().Get("page")
+
+		var offset int64
+		if page != "" {
+			pageNum, err := strconv.ParseInt(page, 10, 64)
+			if err != nil {
+				err := fmt.Errorf("could not parse page, error: %w", err)
+				RespondWithError(w, http.StatusInternalServerError, err.Error())
+			}
+
+			offset = pageNum * 20
+		}
+
+		params := database.GetAllReleasesByUserParams{
+			UserID: userId,
+			Offset: offset,
+		}
+
+		releases, err := c.Db.GetAllReleasesByUser(context.Background(), params)
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		type allReleasesResp struct {
-			Data []Release `json:"data"`
+			Data []PublicRelease `json:"data"`
 		}
 
-		allReleases := []Release{}
+		allReleases := []PublicRelease{}
 
 		for _, rel := range releases {
-			allReleases = append(allReleases, convertDbRelease(rel))
+			allReleases = append(allReleases, convertDbUserRelease(rel))
 		}
 
 		allResp := allReleasesResp{Data: allReleases}
@@ -359,6 +377,20 @@ func convertDbRelease(rel database.Release) Release {
 		UpdatedAt: rel.UpdatedAt,
 	}
 }
+
+func convertDbUserRelease(rel database.GetAllReleasesByUserRow) PublicRelease {
+	return PublicRelease{
+		ID:        int(rel.ID),
+		Name:      rel.Name,
+		UserID:    rel.UserID,
+		Imgurl:    rel.Imgurl,
+		IsPublic:  rel.IsPublic,
+		CreatedAt: rel.CreatedAt,
+		UpdatedAt: rel.UpdatedAt,
+		Username:  rel.Username,
+	}
+}
+
 
 func convertDbPublicRelease(rel database.GetPublicReleasesRow) PublicRelease {
 	return PublicRelease{

@@ -35,10 +35,18 @@ SELECT releases.*, users.username FROM releases
 SELECT * FROM releases WHERE is_public = TRUE;
 
 -- name: GetAllPublicReleasesByUser :many
-SELECT * FROM releases WHERE is_public = TRUE AND user_id = ?;
+SELECT releases.*, users.username FROM releases
+  INNER JOIN users ON users.id = releases.user_id
+  WHERE is_public = TRUE AND user_id = ?
+  ORDER BY releases.created_at DESC
+  LIMIT 20 OFFSET ?;
 
 -- name: GetAllReleasesByUser :many 
-SELECT * FROM releases WHERE user_id = ?;
+SELECT releases.*, users.username FROM releases
+  INNER JOIN users ON users.id = releases.user_id
+  WHERE user_id = ?
+  ORDER BY releases.created_at DESC
+  LIMIT 20 OFFSET ?;
 
 -- name: DeleteReleaseById :exec
 DELETE FROM releases WHERE id = ?;

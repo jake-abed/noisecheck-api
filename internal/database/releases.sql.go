@@ -98,18 +98,39 @@ func (q *Queries) GetAllPublicReleases(ctx context.Context) ([]Release, error) {
 }
 
 const getAllPublicReleasesByUser = `-- name: GetAllPublicReleasesByUser :many
-SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE is_public = TRUE AND user_id = ?
+SELECT releases.id, releases.name, releases.user_id, releases.imgurl, releases.song_count, releases.is_public, releases.created_at, releases.updated_at, users.username FROM releases
+  INNER JOIN users ON users.id = releases.user_id
+  WHERE is_public = TRUE AND user_id = ?
+  ORDER BY releases.created_at DESC
+  LIMIT 20 OFFSET ?
 `
 
-func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string) ([]Release, error) {
-	rows, err := q.db.QueryContext(ctx, getAllPublicReleasesByUser, userID)
+type GetAllPublicReleasesByUserParams struct {
+	UserID string
+	Offset int64
+}
+
+type GetAllPublicReleasesByUserRow struct {
+	ID        int64
+	Name      string
+	UserID    string
+	Imgurl    string
+	SongCount int64
+	IsPublic  bool
+	CreatedAt string
+	UpdatedAt string
+	Username  string
+}
+
+func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, arg GetAllPublicReleasesByUserParams) ([]GetAllPublicReleasesByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPublicReleasesByUser, arg.UserID, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Release
+	var items []GetAllPublicReleasesByUserRow
 	for rows.Next() {
-		var i Release
+		var i GetAllPublicReleasesByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -119,6 +140,7 @@ func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string)
 			&i.IsPublic,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
@@ -134,18 +156,39 @@ func (q *Queries) GetAllPublicReleasesByUser(ctx context.Context, userID string)
 }
 
 const getAllReleasesByUser = `-- name: GetAllReleasesByUser :many
-SELECT id, name, user_id, imgurl, song_count, is_public, created_at, updated_at FROM releases WHERE user_id = ?
+SELECT releases.id, releases.name, releases.user_id, releases.imgurl, releases.song_count, releases.is_public, releases.created_at, releases.updated_at, users.username FROM releases
+  INNER JOIN users ON users.id = releases.user_id
+  WHERE user_id = ?
+  ORDER BY releases.created_at DESC
+  LIMIT 20 OFFSET ?
 `
 
-func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Release, error) {
-	rows, err := q.db.QueryContext(ctx, getAllReleasesByUser, userID)
+type GetAllReleasesByUserParams struct {
+	UserID string
+	Offset int64
+}
+
+type GetAllReleasesByUserRow struct {
+	ID        int64
+	Name      string
+	UserID    string
+	Imgurl    string
+	SongCount int64
+	IsPublic  bool
+	CreatedAt string
+	UpdatedAt string
+	Username  string
+}
+
+func (q *Queries) GetAllReleasesByUser(ctx context.Context, arg GetAllReleasesByUserParams) ([]GetAllReleasesByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllReleasesByUser, arg.UserID, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Release
+	var items []GetAllReleasesByUserRow
 	for rows.Next() {
-		var i Release
+		var i GetAllReleasesByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -155,6 +198,7 @@ func (q *Queries) GetAllReleasesByUser(ctx context.Context, userID string) ([]Re
 			&i.IsPublic,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
