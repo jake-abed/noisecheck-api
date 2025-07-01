@@ -4,7 +4,8 @@ pipeline {
     stages {
         stage('build') {
             steps {
-                sh 'go build .'
+                sh 'ls -la'
+                sh 'go run .'
             }
         }
     }
