@@ -30,6 +30,8 @@ func RespondWithError(
 }
 
 func main() {
+	fmt.Println("Noisecheck server starting up")
+
 	// Grabs all documented keys
 	cfg := createApiConfig()
 	dbURL := fmt.Sprintf("%s?authToken=%s", cfg.TursoUrl, cfg.TursoToken)
@@ -84,5 +86,6 @@ func main() {
 	r.Post("/api/releases", authdCreateRelease)
 	r.Get("/api/tracks/{id}", cfg.getTrackHandler)
 	r.Post("/api/tracks", authdCreateTrack)
+	fmt.Println("Noisecheck server listening on port :3000")
 	http.ListenAndServe(":3000", r)
 }

@@ -391,7 +391,6 @@ func convertDbUserRelease(rel database.GetAllReleasesByUserRow) PublicRelease {
 	}
 }
 
-
 func convertDbPublicRelease(rel database.GetPublicReleasesRow) PublicRelease {
 	return PublicRelease{
 		ID:        int(rel.ID),

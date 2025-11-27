@@ -55,7 +55,7 @@ type PublicRelease struct {
 	IsPublic  bool   `json:"isPublic"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
-	Username string `json:"username"`
+	Username  string `json:"username"`
 }
 
 type NewTrackBody struct {
